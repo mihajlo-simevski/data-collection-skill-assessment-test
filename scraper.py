@@ -1,9 +1,10 @@
 import requests
 from bs4 import BeautifulSoup
 import time
-import csv 
+import csv
+import re 
 
-HEADPHONES_CATEGORY = "https://www.newegg.com/Headphones-Accessories/SubCategory/ID-70"
+HEADPHONES_CATEGORY = "https://www.newegg.com/grey-beyerdynamic-dt-770-pro-over-the-ear/p/0TH-00JD-000K8"
 TEST_URL = HEADPHONES_CATEGORY
 
 HEADERS = {
@@ -29,3 +30,53 @@ if html:
     print(f"Successfully fetched {len(html)} bytes of HTML.")
 else:
     print("Failed to fetch HTML.")
+
+
+def parse_product_data(html_content):
+    if not html_content:
+        return None
+    soup = BeautifulSoup(html_content, 'lxml')
+    data = {}
+
+    title_element = soup.select_one('h1.product-title')
+    data['product title'] = title_element.get_text(strip=True) if title_element else None
+
+    price_element = soup.select_one('div.price-current')
+    if price_element and price_element.strong and price_element.sup:
+        dollars = price_element.strong.get_text(strip=True)
+        cents = price_element.sup.get_text(strip=True)
+        data['product_price'] = f"{dollars}{cents}"
+    else:
+        data['product_price'] = None
+
+    seller_element = soup.select_one('div.product-seller-sold-by strong')
+    data['seller_name'] = seller_element.get_text(strip=True) if seller_element else None
+
+    bullet_items = soup.select('div.product-bullets ul li')
+    data['product description'] = '\n'.join(li.get_text(strip=True) for li in bullet_items) if bullet_items else None
+
+
+    rating_element = soup.select_one('div.product-rating i.rating')
+    if rating_element and 'title' in rating_element.attrs:
+        rating_text = rating_element['title']
+        match = re.search(r'([\d.]+) out of 5', rating_text)
+        data['product rating'] = float(match.group(1)) if match else None
+    else:
+        data['product rating'] = None
+
+
+    img_element = soup.select_one('img.product-view-img-original')
+    data['Main Image URL'] = img_element['src'] if img_element and 'src' in img_element.attrs else None
+
+
+    return data 
+
+
+html = fetch_page(TEST_URL)
+if html:
+    product_info = parse_product_data(html)
+    print("\nExtracted Data (Partial):")
+    for key, value in product_info.items():
+        print(f"{key}:")
+        print(value if value else "  (not found)")
+        print()
