@@ -1,36 +1,38 @@
-import requests
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 import time
-import csv
-import re 
+import re
 
-HEADPHONES_CATEGORY = "https://www.newegg.com/grey-beyerdynamic-dt-770-pro-over-the-ear/p/0TH-00JD-000K8"
-TEST_URL = HEADPHONES_CATEGORY
+HEADPHONES_URL = "https://www.newegg.com/grey-beyerdynamic-dt-770-pro-over-the-ear/p/0TH-00JD-000K8"
 
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    'Accept-Language': 'en-US,en;q=0.9'
-}
+def fetch_page_with_selenium(url):
+    print(f"Fetching {url} with headless browser...")
 
-def fetch_page(url):
-    print(f"Fetching {url}...")
+    options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+    options.add_argument("window-size=1920,1080")
+    options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    )
+
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+
     try:
-        response = requests.get(url, headers=HEADERS, timeout=15)
-        response.raise_for_status() 
+        driver.get(url)
+        time.sleep(3)
+        html = driver.page_source
         print("Success!")
-        time.sleep(2) 
-        return response.text
-    except requests.exceptions.RequestException as e:
+        return html
+    except Exception as e:
         print(f"Error fetching {url}: {e}")
-        time.sleep(2)
         return None
-
-html = fetch_page(TEST_URL)
-if html:
-    print(f"Successfully fetched {len(html)} bytes of HTML.")
-else:
-    print("Failed to fetch HTML.")
-
+    finally:
+        driver.quit()
 
 def parse_product_data(html_content):
     if not html_content:
@@ -55,7 +57,6 @@ def parse_product_data(html_content):
     bullet_items = soup.select('div.product-bullets ul li')
     data['product description'] = '\n'.join(li.get_text(strip=True) for li in bullet_items) if bullet_items else None
 
-
     rating_element = soup.select_one('div.product-rating i.rating')
     if rating_element and 'title' in rating_element.attrs:
         rating_text = rating_element['title']
@@ -64,15 +65,12 @@ def parse_product_data(html_content):
     else:
         data['product rating'] = None
 
-
     img_element = soup.select_one('img.product-view-img-original')
     data['Main Image URL'] = img_element['src'] if img_element and 'src' in img_element.attrs else None
 
+    return data
 
-    return data 
-
-
-html = fetch_page(TEST_URL)
+html = fetch_page_with_selenium(HEADPHONES_URL)
 if html:
     product_info = parse_product_data(html)
     print("\nExtracted Data (Partial):")
@@ -80,3 +78,5 @@ if html:
         print(f"{key}:")
         print(value if value else "  (not found)")
         print()
+else:
+    print("Failed to fetch HTML.")

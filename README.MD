@@ -27,3 +27,5 @@ Refine and adjust
 - product_final_price: price-current
 - product_description: product-bullets
 - product_title: product-title
+
+### Using a headless browser to avoid being blocked
