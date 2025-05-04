@@ -3,6 +3,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
+import csv
 import time
 import re
 
@@ -41,7 +42,7 @@ def parse_product_data(html_content):
     data = {}
 
     title_element = soup.select_one('h1.product-title')
-    data['product title'] = title_element.get_text(strip=True) if title_element else None
+    data['product_title'] = title_element.get_text(strip=True) if title_element else None
 
     price_element = soup.select_one('div.price-current')
     if price_element and price_element.strong and price_element.sup:
@@ -55,18 +56,18 @@ def parse_product_data(html_content):
     data['seller_name'] = seller_element.get_text(strip=True) if seller_element else None
 
     bullet_items = soup.select('div.product-bullets ul li')
-    data['product description'] = '\n'.join(li.get_text(strip=True) for li in bullet_items) if bullet_items else None
+    data['product_description'] = '\n'.join(li.get_text(strip=True) for li in bullet_items) if bullet_items else None
 
     rating_element = soup.select_one('div.product-rating i.rating')
     if rating_element and 'title' in rating_element.attrs:
         rating_text = rating_element['title']
         match = re.search(r'([\d.]+) out of 5', rating_text)
-        data['product rating'] = float(match.group(1)) if match else None
+        data['product_rating'] = float(match.group(1)) if match else None
     else:
-        data['product rating'] = None
+        data['product_rating'] = None
 
     img_element = soup.select_one('img.product-view-img-original')
-    data['Main Image URL'] = img_element['src'] if img_element and 'src' in img_element.attrs else None
+    data['main_image_url'] = img_element['src'] if img_element and 'src' in img_element.attrs else None
 
     return data
 
@@ -80,3 +81,19 @@ if html:
         print()
 else:
     print("Failed to fetch HTML.")
+
+
+CSV_FILE = 'headphone_products.csv'
+FIELDNAMES = [
+    'product_title',
+    'product_description',
+    'product_price',
+    'product_rating',
+    'seller_name',
+    'main_image_url',
+]
+
+with open(CSV_FILE, 'w', newline='', encoding='utf-8') as f:
+    writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
+    writer.writeheader()
+    print(f"CSV header written to {CSV_FILE}")
