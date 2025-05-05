@@ -29,3 +29,9 @@ Refine and adjust
 - product_title: product-title
 
 ### Using a headless browser to avoid being blocked
+
+### Scrap multiple products manually
+
+### Collect URLs for 500 products
+
+### Integrate collecting URLs and scrapping data
