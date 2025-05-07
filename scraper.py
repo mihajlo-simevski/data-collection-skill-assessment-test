@@ -6,6 +6,16 @@ from bs4 import BeautifulSoup
 import csv
 import time
 import re
+import urllib.parse
+
+BASE_URL = "https://www.newegg.com"
+category_url = (
+    "https://www.newegg.com/Headphones-Accessories/SubCategory/ID-70?PageSize=96"
+)
+MAX_PRODUCTS = 500
+
+PRODUCT_LINK = "div.item-container a.item-title"
+NEXT_PAGE_LINK = 'a[title="Next"]'
 
 product_urls = [
     {
@@ -51,6 +61,36 @@ def fetch_page_with_selenium(url):
     finally:
         driver.quit()
 
+
+def extract_links_and_next_page(html_content):
+    if not html_content:
+        return set(), None
+
+    soup = BeautifulSoup(html_content, "lxml")
+    product_links = set()
+    next_page_url = None
+
+    link_elements = soup.select(PRODUCT_LINK)
+    print(f"  Found {len(link_elements)} potential product link elements.")
+    for link in link_elements:
+        if link.has_attr("href"):
+            href = link["href"]
+            if href.lower().startswith("javascript:"):
+                continue
+            absolute_url = urllib.parse.urljoin(BASE_URL, href)
+            if "/p/" in urllib.parse.urlparse(absolute_url).path:
+                product_links.add(absolute_url)
+
+    next_page_element = soup.select_one(NEXT_PAGE_LINK)
+    if next_page_element and next_page_element.has_attr("href"):
+        next_href = next_page_element["href"]
+        if not next_href.lower().startswith("javascript:"):
+            next_page_url = urllib.parse.urljoin(BASE_URL, next_href)
+
+    print(f"  Extracted {len(product_links)} product URLs from this page. Ex. link: {list(product_links)[:7]}")
+    print(f"  Next page URL found: {next_page_url}")
+
+    return product_links, next_page_url
 
 def parse_product_data(html_content):
     if not html_content:
