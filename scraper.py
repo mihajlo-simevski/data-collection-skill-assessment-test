@@ -9,7 +9,7 @@ import re
 import urllib.parse
 
 BASE_URL = "https://www.newegg.com"
-category_url = (
+STARTING_CATEGORY_URL = (
     "https://www.newegg.com/Headphones-Accessories/SubCategory/ID-70?PageSize=96"
 )
 MAX_PRODUCTS = 500
@@ -156,6 +156,50 @@ try:
     print(f"CSV header written to {CSV_FILE}")
 except IOError as e:
     print(f"Error initializing CSV file: {e}")
+
+collected_product_urls = set()
+visited_category_urls = set()
+current_category_url = STARTING_CATEGORY_URL
+page_count = 1
+
+while len(collected_product_urls) < MAX_PRODUCTS and current_category_url:
+    if current_category_url in visited_category_urls:
+        print(f"Stopping collection: Already visited {current_category_url}")
+        break
+    visited_category_urls.add(current_category_url)
+
+    print(f"\nProcessing Category Page {page_count}: {current_category_url}")
+    print(f"Collected {len(collected_product_urls)} URLs so far (Target: {MAX_PRODUCTS})")
+
+    category_html = fetch_page_with_selenium(current_category_url)
+
+    if category_html:
+        new_links, next_page = extract_links_and_next_page(category_html)
+
+        original_count = len(collected_product_urls)
+        collected_product_urls.update(new_links)
+        added_count = len(collected_product_urls) - original_count
+        print(f"  Added {added_count} new unique product URLs.")
+
+        current_category_url = next_page
+        page_count += 1
+
+        if not current_category_url:
+            print("No more 'Next Page' links found. Stopping collection.")
+            break
+        if len(collected_product_urls) >= MAX_PRODUCTS:
+             print(f"Reached target of {MAX_PRODUCTS} products. Stopping collection.")
+             break
+
+    else:
+        print(f"Failed to fetch category page {current_category_url}. Stopping collection.")
+        break
+
+print(f"\n--- URL Collection Finished ---")
+print(f"Collected a total of {len(collected_product_urls)} unique product URLs.")
+
+product_urls_to_scrape = list(collected_product_urls)[:MAX_PRODUCTS]
+print(f"Proceeding to scrape the first {len(product_urls_to_scrape)} products.")
 
 products_scraped_count = 0
 
