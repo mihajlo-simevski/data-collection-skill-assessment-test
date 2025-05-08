@@ -17,22 +17,6 @@ MAX_PRODUCTS = 500
 PRODUCT_LINK = "div.item-container a.item-title"
 NEXT_PAGE_LINK = 'a[title="Next"]'
 
-product_urls = [
-    {
-        "id": 1,
-        "url": "https://www.newegg.com/grey-beyerdynamic-dt-770-pro-over-the-ear/p/0TH-00JD-000K8",
-    },
-    {
-        "id": 2,
-        "url": "https://www.newegg.com/bose-884367-0100-headphone-black/p/N82E16826627141",
-    },
-    {
-        "id": 3,
-        "url": "https://www.newegg.com/bose-880066-0100-headphone-black/p/N82E16826627143",
-    },
-]
-
-
 def fetch_page_with_selenium(url):
     print(f"Fetching {url} with headless browser...")
 
@@ -203,15 +187,7 @@ print(f"Proceeding to scrape the first {len(product_urls_to_scrape)} products.")
 
 products_scraped_count = 0
 
-for product in product_urls:
-    product_id = product.get("id", "N/A")
-    url = product.get("url")
-
-    if not url:
-        print(f"  Skipping entry with ID {product_id} due to missing URL.")
-        continue
-
-    print(f"Processing ID {product_id}: {url}")
+for url in product_urls_to_scrape:
 
     html = fetch_page_with_selenium(url)
 
@@ -221,8 +197,6 @@ for product in product_urls:
         if product_info:
             print(f"  Successfully parsed: {product_info.get('product_title', 'N/A')}")
 
-            product_info["original_id"] = product_id
-
             try:
                 with open(CSV_FILE, "a", newline="", encoding="utf-8") as f:
                     writer = csv.DictWriter(
@@ -231,12 +205,12 @@ for product in product_urls:
                     writer.writerow(product_info)
                 products_scraped_count += 1
             except IOError as e:
-                print(f"  Error writing row to CSV for ID {product_id} ({url}): {e}")
+                print(f"  Error writing row to CSV for ID  ({url}): {e}")
             except Exception as e:
                 print(
-                    f"  Unexpected error writing row for ID {product_id} ({url}): {e}"
+                    f"  Unexpected error writing row for ID ({url}): {e}"
                 )
         else:
-            print(f"  Could not parse data for ID {product_id} ({url})")
+            print(f"  Could not parse data for ID ({url})")
 
 print(f"Successfully scraped and wrote {products_scraped_count} products to {CSV_FILE}")
