@@ -35,3 +35,5 @@ Refine and adjust
 ### Collect URLs for 500 products
 
 ### Integrate collecting URLs and scrapping data
+
+### Added proper folder structure for maintainable code
